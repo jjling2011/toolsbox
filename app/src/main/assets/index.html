@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="icon-from" content="https://icons8.com/icons/set/toolbox" />
+        <title>工具箱</title>
+        <link rel="stylesheet" href="./style/base.css" />
+        <script src="./libs/jquery-3.7.1.min.js"></script>
+        <style>
+            li {
+                margin: 0.25rem 0;
+                padding: 0.75rem;
+                background-color: #f5f5f5;
+                border-radius: 5px;
+                transition: background-color 0.3s;
+            }
+            li:hover {
+                background-color: #e0e0e0;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+    <body>
+        <ul>
+            <li data-url="./list-sum/index.html">列表计算器</li>
+            <li data-url="./dict-en/index.html">英语词典</li>
+            <li data-url="./dict-cn/index.html">中文词典</li>
+            <li data-url="./wubi86/index.html">五笔反查86版</li>
+            <li data-url="./credits.html">感谢</li>
+        </ul>
+
+        <script>
+            // 可选：添加点击效果
+            $("li").each((_, el) => {
+                const o = $(el)
+                const url = o.attr("data-url")
+                o.on("click", () => (window.location.href = url))
+            })
+        </script>
+    </body>
+</html>

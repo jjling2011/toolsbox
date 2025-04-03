@@ -1,0 +1,23 @@
+* {
+    margin: 0;
+}
+
+html {
+    padding: 0;
+    display: flex;
+    justify-content: center;
+}
+
+body {
+    flex-direction: column;
+    display: flex;
+    width: 90%;
+    height: 100vh;
+    margin: 1rem auto;
+    max-width: 30rem;
+}
+
+ul {
+    list-style-type: none;
+    padding: 0;
+}

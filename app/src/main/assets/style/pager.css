@@ -1,0 +1,26 @@
+.pager {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding-bottom: 1rem;
+}
+
+.pager button {
+    border-radius: 0.25rem;
+    border: 1px solid lightgray;
+    height: 1.5rem;
+    min-width: 1.5rem;
+    margin: 0 0.125rem;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+.pager button.active {
+    background-color: darksalmon;
+}
+
+.pager input[type="text"] {
+    margin: 0 0.125rem;
+    text-align: center;
+    width: 1.5rem;
+    border: 1px solid lightgray;
+}

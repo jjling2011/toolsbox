@@ -1,0 +1,34 @@
+size before: 22.479 MiB
+
+select word, oldword, pinyin from word where instr('土地', word) > 0;
+
+sqlite> .tables
+ci        idiom     word      xiehouyu
+
+sqlite> .schema ci
+CREATE TABLE ci (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "ci" TEXT, "explanation" TEXT
+    );
+
+sqlite> .schema idiom
+CREATE TABLE idiom (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "derivation" TEXT, "example" TEXT, "explanation" TEXT,
+         "pinyin" TEXT, "word" TEXT, "abbreviation" TEXT
+    );
+
+sqlite> .schema word
+CREATE TABLE word (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "word" TEXT, "oldword" TEXT, "strokes" TEXT,
+         "pinyin" TEXT, "radicals" TEXT, "explanation" TEXT,
+          "more" TEXT
+    );
+
+sqlite> .schema xiehouyu
+CREATE TABLE xiehouyu (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        "riddle" TEXT, "answer" TEXT
+    );
+	

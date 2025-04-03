@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>列表计算器</title>
+        <link rel="stylesheet" href="../style/base.css" />
+        <link rel="stylesheet" href="../style/dialogs.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <script src="../libs/jquery-3.7.1.min.js"></script>
+        <script src="../libs/dialogs.js"></script>
+    </head>
+    <body>
+        <div class="input-container">
+            <input id="priceInput" placeholder="输入单价，按回车添加" />
+        </div>
+        <div class="tpl-container">
+            模板：<span></span>
+            <button id="saveTpl">保存</button>
+            <button id="loadTpl">加载</button>
+            <button id="removeTpl">删除</button>
+        </div>
+        <div class="total-container">
+            合计: <span id="totalAmount">0.00</span>
+            <button id="clearStorage" class="clear-btn">清空数据</button>
+            <button id="clearAmount" class="clear-btn">数量归零</button>
+        </div>
+        <ul id="itemsList"></ul>
+    </body>
+    <script>
+        $(document).ready(function () {
+            const dialogs = CreateDialogs()
+
+            // 页面加载时从localStorage恢复数据
+            loadShoppingListFromStorage()
+
+            // 监听输入框按键事件
+            $("#priceInput").on("keydown", function (e) {
+                if (e.key === "+" || e.key === "Enter") {
+                    e.preventDefault()
+                    addItem()
+                }
+            })
+
+            // 清除所有数据按钮
+            $("#clearStorage").on("click", async function () {
+                const ok = await dialogs.confirm("确定要清除所有数据吗？")
+                if (!ok) {
+                    return
+                }
+                localStorage.removeItem("shoppingList")
+                $("#itemsList").empty()
+                updateTotal()
+            })
+
+            $("#clearAmount").on("click", function () {
+                $(".item").each((_, el) => {
+                    const item = $(el)
+                    item.find(".quantity-value").each((_, cel) => {
+                        $(cel).val(0)
+                        updateSubtotal(item)
+                        saveShoppingListToStorage()
+                    })
+                })
+            })
+
+            // 添加新商品
+            function addItem() {
+                const price = parseFloat(priceInput.value)
+                if (isNaN(price) || price === 0) {
+                    return
+                }
+
+                createItemElement(price, 1)
+                $("#priceInput").val("")
+                saveShoppingListToStorage()
+            }
+
+            // 创建商品元素
+            function createItemElement(price, quantity) {
+                const item = $("<li>", {
+                    class: "item",
+                }).appendTo("#itemsList")
+
+                item.html(`
+                    <div class="quantity-controls">
+                        <button class="quantity-btn minus-btn">-</button>
+                        <input class="quantity-value" type="text" value="${quantity}" >
+                        <button class="quantity-btn plus-btn">+</button>
+                    </div>
+                    <div class="price">单价: ${price.toFixed(2)}</div>
+                    <div class="subtotal">小计: ${(price * quantity).toFixed(
+                        2,
+                    )}</div>
+                    <button class="delete-btn">删除</button>
+                `)
+
+                setupItemEvents(item)
+                updateTotal()
+            }
+
+            // 为商品项设置事件监听
+            function setupItemEvents(item) {
+                // 数量减少按钮
+                item.on("click", ".minus-btn", function () {
+                    const quantitySpan = item.find(".quantity-value")
+                    let quantity = parseInt(quantitySpan.val())
+                    quantitySpan.val(--quantity)
+                    updateSubtotal(item)
+                    saveShoppingListToStorage()
+                })
+
+                item.on("click", ".plus-btn", function () {
+                    const quantitySpan = item.find(".quantity-value")
+                    let quantity = parseInt(quantitySpan.val())
+                    quantitySpan.val(++quantity)
+                    updateSubtotal(item)
+                    saveShoppingListToStorage()
+                })
+
+                item.on("change", ".quantity-value", function () {
+                    const quantitySpan = item.find(".quantity-value")
+                    let quantity = parseInt(quantitySpan.val())
+                    updateSubtotal(item)
+                    saveShoppingListToStorage()
+                })
+
+                item.on("click", ".delete-btn", function () {
+                    item.remove()
+                    updateTotal()
+                    saveShoppingListToStorage()
+                })
+            }
+            // 更新小计
+            function updateSubtotal(item) {
+                const quantity = parseInt(item.find(".quantity-value").val())
+                const price = parseFloat(
+                    item.find(".price").text().split(": ")[1],
+                )
+                item.find(".subtotal").text(
+                    `小计: ${(price * quantity).toFixed(2)}`,
+                )
+                updateTotal()
+            }
+
+            // 更新总金额
+            function updateTotal() {
+                let total = 0
+                $(".item").each(function () {
+                    const subtotal = parseFloat(
+                        $(this).find(".subtotal").text().split(": ")[1],
+                    )
+                    total += subtotal
+                })
+                $("#totalAmount").text(total.toFixed(2))
+            }
+
+            let handle = undefined
+            function saveShoppingListToStorage() {
+                clearTimeout(handle)
+                handle = setTimeout(() => {
+                    const data = gatherShoppingList()
+                    localStorage.setItem("shoppingList", JSON.stringify(data))
+                }, 800)
+            }
+
+            // 保存数据到localStorage
+            function gatherShoppingList() {
+                const itemsData = []
+                $(".item").each(function () {
+                    const price = parseFloat(
+                        $(this).find(".price").text().split(": ")[1],
+                    )
+                    const quantity = parseInt(
+                        $(this).find(".quantity-value").val(),
+                    )
+                    itemsData.push({ price, quantity })
+                })
+                return itemsData
+            }
+
+            function replaceShoppingList(itemsData) {
+                $("#itemsList").empty()
+                itemsData.forEach((item) => {
+                    createItemElement(item.price, item.quantity)
+                })
+            }
+
+            // 从localStorage加载数据
+            function loadShoppingListFromStorage() {
+                const savedData = localStorage.getItem("shoppingList")
+                if (savedData) {
+                    try {
+                        const itemsData = JSON.parse(savedData)
+                        replaceShoppingList(itemsData)
+                    } catch (e) {
+                        console.error("加载保存的数据失败:", e)
+                    }
+                }
+            }
+
+            const TPL_KEY = "shoppingListTpls"
+            function loaddTplFromStorage() {
+                try {
+                    const savedData = localStorage.getItem(TPL_KEY)
+                    if (savedData) {
+                        return JSON.parse(savedData)
+                    }
+                } catch {}
+                return {}
+            }
+
+            function saveTplToStorage(name) {
+                if (!name) {
+                    return
+                }
+                const tpl = loaddTplFromStorage()
+                tpl[name] = gatherShoppingList()
+                localStorage.setItem(TPL_KEY, JSON.stringify(tpl))
+            }
+
+            $("#removeTpl").on("click", async () => {
+                const tpl = loaddTplFromStorage()
+                const names = Object.keys(tpl)
+                if (!names || names.length < 1) {
+                    dialogs.alert("没有模板可选")
+                    return
+                }
+                const name = await dialogs.select("请选择模板名：", names)
+                if (!name) {
+                    return
+                }
+                delete tpl[name]
+                localStorage.setItem(TPL_KEY, JSON.stringify(tpl))
+            })
+
+            $("#loadTpl").on("click", async () => {
+                const tpl = loaddTplFromStorage()
+                const names = Object.keys(tpl)
+                if (!names || names.length < 1) {
+                    dialogs.alert("没有模板可选")
+                    return
+                }
+                const name = await dialogs.select("请选择模板名：", names)
+                if (!name) {
+                    return
+                }
+                replaceShoppingList(tpl[name])
+                saveShoppingListToStorage()
+            })
+
+            $("#saveTpl").on("click", async function () {
+                const name = await dialogs.prompt("请输入模板名：", "")
+                saveTplToStorage(name)
+            })
+        })
+    </script>
+</html>

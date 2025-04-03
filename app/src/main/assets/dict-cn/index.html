@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>中文词典</title>
+        <link rel="stylesheet" href="../style/base.css" />
+        <link rel="stylesheet" href="../style/pager.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <script src="../libs/jquery-3.7.1.min.js"></script>
+        <script src="../libs/pager.js"></script>
+    </head>
+    <body>
+        <input
+            class="container"
+            type="text"
+            id="inputBox"
+            oninput="update()"
+            placeholder="在这里输入内容..."
+        />
+        <div id="searchOptions" class="container">
+            <input type="checkbox" id="checkWord" name="checkWord" />
+            <label for="checkWord">字</label>
+            <input type="checkbox" id="checkIdiom" name="checkIdiom" />
+            <label for="checkIdiom">成语</label>
+            <input type="checkbox" id="checkXhy" name="checkXhy" />
+            <label for="checkXhy">歇后语</label>
+        </div>
+        <ul id="outputBox" class="container"></ul>
+        <div id="pager" class="pager"></div>
+    </body>
+
+    <script>
+        const SETTING_IDS = ["Word", "Idiom", "Xhy"]
+        const SETTING_KEY = "dict-cn-settings"
+
+        loadSettings()
+
+        const inputBox = document.getElementById("inputBox")
+        const outputBox = document.getElementById("outputBox")
+        const pager = CreatePager("pager", 5, (n) => showPage(n))
+        let results = []
+
+        // for debugging
+        function lookup1(keyword) {
+            const r = []
+            for (let i = 101; i < 1000; i++) {
+                r.push({ hello: `${i}` })
+            }
+            showResult(r)
+        }
+
+        function lookup(keyword) {
+            const set = gatherSearchOptions()
+            const headers = {
+                ["Include-Word"]: `${set["checkWord"]}`,
+                ["Include-Idiom"]: `${set["checkIdiom"]}`,
+                ["Include-Xhy"]: `${set["checkXhy"]}`,
+                ["Keyword"]: encodeURIComponent(keyword),
+            }
+
+            fetch("./serv.php", {
+                method: "GET",
+                headers,
+            })
+                .then((response) => response.json())
+                .then((data) => showResult(data))
+                .catch((error) =>
+                    showResult([
+                        {
+                            ["error"]: error.message,
+                        },
+                    ]),
+                )
+        }
+
+        function addSpan(li, text) {
+            const span = $("<span>")
+            span.text(text)
+            li.append(span)
+        }
+
+        function addPre(li, text) {
+            const pre = $("<pre>")
+            pre.text(text)
+            li.append(pre)
+        }
+
+        function genWord(d) {
+            const li = $("<li>")
+            const w = d["oldword"]
+                ? `${d["word"]} (${d["oldword"]})`
+                : `${d["word"]}`
+            addSpan(
+                li,
+                `${w} ${d["pinyin"]} 部首 ${d["radicals"]} 笔画 ${d["strokes"]}`,
+            )
+            addPre(li, d["explanation"])
+            return li
+        }
+
+        function genIdiom(data) {
+            const li = $("<li>")
+            addSpan(li, `${data["word"]}`)
+            addPre(li, `${data["pinyin"]}`)
+            addSpan(li, "出处：")
+            addPre(li, data["derivation"])
+            addSpan(li, "解释：")
+            addPre(li, data["explanation"])
+            const exp = data["example"]
+            if (exp && exp !== "无") {
+                addSpan(li, "例子：")
+                addPre(li, data["example"])
+            }
+            return li
+        }
+
+        function genXhy(data) {
+            const li = $("<li>")
+            addSpan(li, `${data["riddle"]}`)
+            addSpan(li, `${data["answer"]}`)
+            return li
+        }
+
+        function genError(data) {
+            const li = $("<li>")
+            const pre = $("<pre>")
+            pre.text(JSON.stringify(data, null, "  "))
+            li.append(pre)
+            return li
+        }
+
+        function addBadge(el, tag) {
+            const b = $('<span class="badge"></span>')
+            b.text(tag)
+            el.append(b)
+        }
+
+        const PAGE_SIZE = 10
+        function showPage(cur) {
+            const data = results || []
+            const start = Math.max(0, (cur - 1) * PAGE_SIZE)
+            const end = Math.min(start + PAGE_SIZE, data.length)
+            const ul = $("#outputBox")
+            ul.empty()
+            if (end <= start) {
+                ul.append($("<li>查无结果</li>"))
+                return
+            }
+            for (let i = start; i < end; i++) {
+                const d = data[i]
+                const table = d["table"]
+                let el = null
+                switch (table) {
+                    case "word":
+                        el = genWord(d)
+                        addBadge(el, "字")
+                        break
+                    case "idiom":
+                        el = genIdiom(d)
+                        addBadge(el, "成语")
+                        break
+                    case "xhy":
+                        el = genXhy(d)
+                        addBadge(el, "歇后语")
+                        break
+                    default:
+                        el = genError(d)
+                        break
+                }
+                ul.append(el)
+            }
+        }
+
+        function showResult(data) {
+            results = data
+            const pns = Math.ceil(results.length / PAGE_SIZE)
+            pager.goto(1, pns)
+        }
+
+        let handle = undefined
+        function update() {
+            const keyword = inputBox.value
+            clearTimeout(handle)
+            if (!keyword) {
+                showResult([])
+                return
+            }
+            handle = setTimeout(() => {
+                lookup(keyword)
+            }, 100)
+        }
+
+        function gatherSearchOptions() {
+            const set = {}
+            for (let k of SETTING_IDS) {
+                const id = `check${k}`
+                set[id] = $(`#${id}`).prop("checked")
+            }
+            return set
+        }
+
+        let saveSettingsHandle = undefined
+        for (let k of SETTING_IDS) {
+            const id = `#check${k}`
+            $(id).on("change", () => {
+                clearTimeout(saveSettingsHandle)
+                saveSettingsHandle = setTimeout(() => {
+                    update()
+                    saveSettings()
+                }, 300)
+            })
+        }
+
+        function saveSettings() {
+            const set = gatherSearchOptions()
+            localStorage.setItem(SETTING_KEY, JSON.stringify(set))
+        }
+
+        function loadSettings() {
+            let set = {
+                ["checkWord"]: true,
+                ["checkIdiom"]: true,
+                ["checkXhy"]: true,
+            }
+            try {
+                const str = localStorage.getItem(SETTING_KEY)
+                if (str.startsWith("{") && str.endsWith("}")) {
+                    set = JSON.parse(str)
+                }
+            } catch {}
+            for (let k of SETTING_IDS) {
+                const id = `check${k}`
+                $(`#${id}`).prop("checked", !!set[id])
+            }
+        }
+    </script>
+</html>

@@ -1,0 +1,84 @@
+.dialog-content {
+    width: 95%;
+    display: flex;
+    margin: 0.25rem auto;
+}
+
+#dialog-select,
+#dialog-loading,
+#dialog-alert,
+#dialog-confirm,
+#dialog-prompt {
+    z-index: 100;
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: none;
+}
+
+#dialog-loading-window,
+#dialog-select-window,
+#dialog-alert-window,
+#dialog-confirm-window,
+#dialog-prompt-window {
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    background-color: white;
+    margin: auto auto;
+    position: relative;
+    top: 30%;
+    width: 80%;
+    max-width: 25rem;
+    border-radius: 0.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+#dialog-loading pre,
+#dialog-alert-window pre,
+#dialog-confirm-window pre,
+#dialog-prompt-window pre {
+    word-break: break-all;
+    font-size: 1rem;
+    white-space: pre-wrap;
+}
+
+#dialog-loading div,
+#dialog-select div,
+#dialog-loding div,
+#dialog-alert-window div,
+#dialog-confirm-window div,
+#dialog-prompt-window div {
+    justify-content: center;
+}
+
+#dialog-select-window button,
+#dialog-alert-window button,
+#dialog-confirm-window button,
+#dialog-prompt-window button {
+    height: 1.7rem;
+    min-width: 3rem;
+    font-size: 0.8rem;
+    border-radius: 0.5rem;
+    border: solid 1px lightgray;
+    margin: 0.125rem 0.25rem;
+    background-color: rgba(0, 0, 0, 0);
+}
+
+#dialog-loading img {
+    max-width: 30%;
+}
+
+#dialog-prompt-window input {
+    height: 1.5rem;
+    font-size: 1rem;
+    flex-grow: 1;
+}
+
+#dialog-select-window select {
+    height: 1.5rem;
+    flex-grow: 1;
+}
