@@ -13,8 +13,9 @@
 https://github.com/pwxcoo/chinese-xinhua  
 
 英语词典数据来源：  
-https://github.com/1eez/103976.git  
+https://github.com/1eez/103976  
 https://github.com/KyleBing/english-vocabulary  
+https://github.com/skywind3000/ECDICT  
 
 代码：  
 https://chat.deepseek.com  

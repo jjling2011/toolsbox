@@ -46,7 +46,22 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleDictCnGetRequest(request: WebResourceRequest): WebResourceResponse {
+    private fun handleDictEngGetRequest(request: WebResourceRequest): WebResourceResponse {
+        val mime = Utils.getMimeType("data.json")
+        val headers = request.requestHeaders
+        val encoded = headers["Keyword"] ?: ""
+        val keyword = URLDecoder.decode(encoded, "UTF-8")
+        val isReverse = headers["Is-Reverse"] == "true"
+
+        val jsonString =
+            dbHelper.searchDictEng(keyword, isReverse)
+        val inputStream = ByteArrayInputStream(jsonString.toByteArray(Charsets.UTF_8))
+        return WebResourceResponse(
+            mime, "UTF-8", inputStream
+        )
+    }
+
+    private fun handleDictChnGetRequest(request: WebResourceRequest): WebResourceResponse {
         val mime = Utils.getMimeType("data.json")
         val headers = request.requestHeaders
         val encoded = headers["Keyword"] ?: ""
@@ -61,7 +76,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         val jsonString =
-            dbHelper.searchKeyword(keyword, includeWordDb, includeIdiomDb, includeXhyDb)
+            dbHelper.searchDictChn(keyword, includeWordDb, includeIdiomDb, includeXhyDb)
         val inputStream = ByteArrayInputStream(jsonString.toByteArray(Charsets.UTF_8))
         return WebResourceResponse(
             mime, "UTF-8", inputStream
@@ -87,13 +102,19 @@ class MainActivity : AppCompatActivity() {
                     if (url.path != null && url.path != "/") url.path!!.substring(1) else "index.html"
                 Log.d(TAG, "url: $url path: $path")
                 return try {
-                    if (path == "dict-cn/serv.php") {
-                        handleDictCnGetRequest(request)
-                    } else {
-                        // 尝试从assets加载文件
-                        val inputStream = assets.open(path)
-                        val mimeType = Utils.getMimeType(path)
-                        WebResourceResponse(mimeType, "UTF-8", inputStream)
+                    when (path) {
+                        "dict-cn/serv.php" -> {
+                            handleDictChnGetRequest(request)
+                        }
+                        "dict-en/serv.php" -> {
+                            handleDictEngGetRequest(request)
+                        }
+                        else -> {
+                            // 尝试从assets加载文件
+                            val inputStream = assets.open(path)
+                            val mimeType = Utils.getMimeType(path)
+                            WebResourceResponse(mimeType, "UTF-8", inputStream)
+                        }
                     }
                 } catch (e: Exception) {
                     // 文件不存在，返回404

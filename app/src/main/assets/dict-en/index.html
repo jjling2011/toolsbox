@@ -1,26 +1,33 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
     <head>
-        <meta
-            name="credit"
-            content="https://github.com/KyleBing/english-vocabulary"
-        />
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="creater" content="DeepSeek v3" />
         <title>英语词典</title>
         <link rel="stylesheet" href="../style/base.css" />
         <link rel="stylesheet" href="../style/pager.css" />
+        <link rel="stylesheet" href="../style/dialogs.css" />
         <script src="../libs/jquery-3.7.1.min.js"></script>
         <script src="../libs/pager.js"></script>
+        <script src="../libs/dialogs.js"></script>
         <style>
             .container {
                 display: flex;
                 margin: 0.25rem 0;
             }
 
+            .container button {
+                border: 1px solid lightgray;
+                background-color: white;
+                border-radius: 0.25rem;
+                margin: 0 0.25rem;
+            }
+
             #inputBox {
+                flex-grow: 1;
                 padding: 0.25rem;
+                line-height: 1rem;
             }
 
             #outputBox {
@@ -28,39 +35,67 @@
             }
 
             li {
+                display: block;
+                padding: 0.5rem 0.5rem;
                 margin: 0.25rem 0;
-                padding: 0.25rem 0.5rem;
                 background-color: ghostwhite;
             }
 
             li:nth-child(odd) {
                 background-color: whitesmoke;
             }
+
+            li span,
+            li pre {
+                display: block;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
         </style>
     </head>
     <body>
-        <input
-            class="container"
-            type="text"
-            id="inputBox"
-            oninput="update()"
-            placeholder="在这里输入内容..."
-        />
+        <div id="searchContainer" class="container">
+            <input type="text" id="inputBox" placeholder="在这里输入内容..." />
+            <button id="lookupButton">搜索</button>
+        </div>
         <ul id="outputBox" class="container"></ul>
         <div id="pager" class="pager"></div>
     </body>
 
-    <script src="./table.js"></script>
     <script>
+        const PAGE_SIZE = 10
         const pager = CreatePager("pager", 5, (n) => showPage(n))
-
-        const inputBox = document.getElementById("inputBox")
-        const outputBox = document.getElementById("outputBox")
-
-        const db = init_db()
+        const dialogs = CreateDialogs()
 
         let results = []
-        const PAGE_SIZE = 15
+        let isChn = false
+
+        $("#lookupButton").on("click", () => {
+            lookup()
+        })
+
+        $("#inputBox").on("keydown", function (event) {
+            if (event.key === "Enter") {
+                lookup()
+            }
+        })
+
+        function toLi(d) {
+            const li = $("<li>")
+            li.append($("<span>").text(d.word))
+            if (d.phonetic) {
+                li.append($("<pre>").text(`/${d.phonetic}/`))
+            }
+            if (d.exchange) {
+                li.append($("<pre>").text(`/${d.exchange}`))
+            }
+            if (d.translation) {
+                const t = d.translation
+                li.append($("<pre>").text(t))
+            }
+            return li
+        }
+
         function showPage(cur) {
             const data = results || []
             const start = Math.max(0, (cur - 1) * PAGE_SIZE)
@@ -72,82 +107,104 @@
                 return
             }
             for (let i = start; i < end; i++) {
-                const li = $("<li>")
-                li.text(data[i].text)
+                const li = toLi(data[i])
                 ul.append(li)
             }
         }
 
-        function lookup(str) {
+        function lookup() {
+            const keyword = ($("#inputBox").val() || "").toLowerCase()
+            if (!keyword) {
+                showResult(null, "", [])
+                return
+            }
+
+            isChn = !/^[a-z \-0-9]+$/i.test(keyword)
+
+            const headers = {
+                ["Is-Reverse"]: isChn ? `true` : `false`,
+                ["Keyword"]: encodeURIComponent(keyword),
+            }
+
+            const done = new Promise((resolve) => {
+                fetch("./serv.php", {
+                    method: "GET",
+                    headers,
+                })
+                    .then((response) => response.json())
+                    .then((data) => showResult(resolve, keyword, data))
+                    .catch((error) =>
+                        showResult(resolve, "", [
+                            {
+                                ["word"]: "error",
+                                ["translation"]: error.message,
+                            },
+                        ]),
+                    )
+            })
+
+            dialogs.loading("拼命搜索中", done, "../res/loading.svg")
+        }
+
+        function marks(kws, str) {
+            const max = Number.MAX_SAFE_INTEGER
+            if (!str || !kws || kws.length < 1) {
+                return max
+            }
             const lower = str.toLowerCase()
-            const kws = [...lower]
-            const arr = []
-            for (let record of db) {
-                let chars = record.chars
-                let len_r = chars.length
-                let len_kw = kws.length
-                let idx_r = 0
-                let idx_kw = 0
-                let match = 0
-                let marks = 0
-                while (idx_r < len_r && idx_kw < len_kw) {
-                    if (chars[idx_r] === kws[idx_kw]) {
-                        match++
-                        marks += idx_r
-                        idx_kw++
-                    }
-                    idx_r++
+            const chars = [...lower]
+            const len_s = chars.length
+            const len_kw = kws.length
+
+            let r = 0
+            let idx_r = 0
+            let idx_kw = 0
+            let match = 0
+            while (idx_r < len_s && idx_kw < len_kw) {
+                if (chars[idx_r] === kws[idx_kw]) {
+                    match++
+                    r += idx_r
+                    idx_kw++
                 }
-                if (match >= len_kw) {
-                    arr.push({
-                        text: record.text,
-                        marks,
+                idx_r++
+            }
+            if (match >= len_kw) {
+                return r + (len_s - match)
+            }
+            return max
+        }
+
+        function showResult(resolve, keyword, data) {
+            try {
+                const kws = [...keyword]
+                if (isChn) {
+                    results = data.sort((a, b) => {
+                        a.cmarks =
+                            a.cmarks ||
+                            marks(
+                                kws,
+                                a.translation.replace(/[a-z.0-9 ]/gim, ""),
+                            )
+                        b.cmarks =
+                            b.cmarks ||
+                            marks(
+                                kws,
+                                b.translation.replace(/[a-z.0-9 ]/gim, ""),
+                            )
+                        return a.cmarks - b.cmarks
+                    })
+                } else {
+                    results = data.sort((a, b) => {
+                        a.emarks = a.emarks || marks(kws, a.word)
+                        b.emarks = b.emarks || marks(kws, b.word)
+                        return a.emarks - b.emarks
                     })
                 }
+                const pns = Math.ceil(results.length / PAGE_SIZE)
+                pager.goto(1, pns)
+            } finally {
+                resolve && resolve()
             }
-
-            if (arr.length < 1) {
-                showResult([])
-            } else {
-                arr.sort((a, b) => a.marks - b.marks)
-                showResult(arr)
-            }
-        }
-
-        function showResult(data) {
-            results = data
-            const pns = Math.ceil(results.length / PAGE_SIZE)
-            pager.goto(1, pns)
-        }
-
-        let searchHandle = undefined
-        function update() {
-            const keyword = inputBox.value
-            clearTimeout(searchHandle)
-            if (!keyword) {
-                showResult([])
-            } else {
-                searchHandle = setTimeout(() => {
-                    lookup(keyword)
-                }, 100)
-            }
-        }
-
-        function init_db() {
-            const db = []
-            const lines = DB_STRING.split("\n")
-            for (let line of lines) {
-                if (!line) {
-                    continue
-                }
-                const lower = line.toLowerCase()
-                const record = {
-                    ["text"]: line,
-                    ["chars"]: [...lower],
-                }
-                db.push(record)
-            }
-            return db
         }
     </script>
 </html>

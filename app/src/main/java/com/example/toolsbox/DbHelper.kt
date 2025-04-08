@@ -10,9 +10,9 @@ import java.io.*
 import java.util.zip.ZipInputStream
 
 class DatabaseHelper(private val context: Context) {
-    private val dbName = "dict-cn.db" // 你的数据库文件名
+    private val dbName = "dict.db" // 你的数据库文件名
     private val dbPath = context.getDatabasePath(dbName).path
-    private val zipAssetName = "res/dict-cn.zip" // assets 中的压缩文件名
+    private val zipAssetName = "res/dict.zip" // assets 中的压缩文件名
 
     fun initializeDatabase(): Boolean {
         // 检查数据库是否已存在
@@ -56,16 +56,52 @@ class DatabaseHelper(private val context: Context) {
         }
     }
 
+    fun searchDictEng(
+        keyword: String, isReverse: Boolean
+    ): String {
+        if (keyword.isEmpty()) {
+            return "[]"
+        }
+
+        if (!checkDatabaseExists()) {
+            if (!initializeDatabase()) {
+                return "[]"
+            }
+        }
+
+        val results = JSONArray()
+        var db: SQLiteDatabase? = null
+        try {
+            db = SQLiteDatabase.openDatabase(dbPath, null, SQLiteDatabase.OPEN_READONLY)
+            val query =
+                if (isReverse) """SELECT word, phonetic, exchange, translation FROM en WHERE translation LIKE ?"""
+                else """SELECT word, phonetic, exchange, translation FROM en WHERE word LIKE ?"""
+            val like = Utils.addPercentSigns(keyword)
+            db.rawQuery(query, arrayOf(like)).use { cursor ->
+                while (cursor.moveToNext()) {
+                    addToResul(results, "", cursor)
+                }
+            }
+        } catch (e: SQLiteException) {
+            e.printStackTrace()
+        } finally {
+            db?.close()
+        }
+        return results.toString()
+    }
+
     private fun addToResul(result: JSONArray, table: String, cursor: Cursor) {
         val item = JSONObject()
-        item.put("table", table)
+        if (table.isNotEmpty()) {
+            item.put("table", table)
+        }
         for (i in 0 until cursor.columnCount) {
             item.put(cursor.getColumnName(i), cursor.getString(i))
         }
         result.put(item)
     }
 
-    fun searchKeyword(
+    fun searchDictChn(
         keyword: String, includeWordDb: Boolean, includeIdiomDb: Boolean, includeXhyDb: Boolean
     ): String {
         if (!checkDatabaseExists()) {

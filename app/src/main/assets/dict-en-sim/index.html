@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta
+            name="credit"
+            content="https://github.com/KyleBing/english-vocabulary"
+        />
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="creater" content="DeepSeek v3" />
+        <title>简明英语词典</title>
+        <link rel="stylesheet" href="../style/base.css" />
+        <link rel="stylesheet" href="../style/pager.css" />
+        <script src="../libs/jquery-3.7.1.min.js"></script>
+        <script src="../libs/pager.js"></script>
+        <style>
+            .container {
+                display: flex;
+                margin: 0.25rem 0;
+            }
+
+            #inputBox {
+                padding: 0.25rem;
+            }
+
+            #outputBox {
+                display: block;
+            }
+
+            li {
+                margin: 0.25rem 0;
+                padding: 0.25rem 0.5rem;
+                background-color: ghostwhite;
+            }
+
+            li:nth-child(odd) {
+                background-color: whitesmoke;
+            }
+        </style>
+    </head>
+    <body>
+        <input
+            class="container"
+            type="text"
+            id="inputBox"
+            oninput="update()"
+            placeholder="在这里输入内容..."
+        />
+        <ul id="outputBox" class="container"></ul>
+        <div id="pager" class="pager"></div>
+    </body>
+
+    <script src="./table.js"></script>
+    <script>
+        const pager = CreatePager("pager", 5, (n) => showPage(n))
+
+        const inputBox = document.getElementById("inputBox")
+        const outputBox = document.getElementById("outputBox")
+
+        const db = init_db()
+
+        let results = []
+        const PAGE_SIZE = 15
+        function showPage(cur) {
+            const data = results || []
+            const start = Math.max(0, (cur - 1) * PAGE_SIZE)
+            const end = Math.min(start + PAGE_SIZE, data.length)
+            const ul = $("#outputBox")
+            ul.empty()
+            if (end <= start) {
+                ul.append($("<li>查无结果</li>"))
+                return
+            }
+            for (let i = start; i < end; i++) {
+                const li = $("<li>")
+                li.text(data[i].text)
+                ul.append(li)
+            }
+        }
+
+        function lookup(str) {
+            const lower = str.toLowerCase()
+            const kws = [...lower]
+            const arr = []
+            for (let record of db) {
+                let chars = record.chars
+                let len_r = chars.length
+                let len_kw = kws.length
+                let idx_r = 0
+                let idx_kw = 0
+                let match = 0
+                let marks = 0
+                while (idx_r < len_r && idx_kw < len_kw) {
+                    if (chars[idx_r] === kws[idx_kw]) {
+                        match++
+                        marks += idx_r
+                        idx_kw++
+                    }
+                    idx_r++
+                }
+                if (match >= len_kw) {
+                    arr.push({
+                        text: record.text,
+                        marks,
+                    })
+                }
+            }
+
+            if (arr.length < 1) {
+                showResult([])
+            } else {
+                arr.sort((a, b) => a.marks - b.marks)
+                showResult(arr)
+            }
+        }
+
+        function showResult(data) {
+            results = data
+            const pns = Math.ceil(results.length / PAGE_SIZE)
+            pager.goto(1, pns)
+        }
+
+        let searchHandle = undefined
+        function update() {
+            const keyword = inputBox.value
+            clearTimeout(searchHandle)
+            if (!keyword) {
+                showResult([])
+            } else {
+                searchHandle = setTimeout(() => {
+                    lookup(keyword)
+                }, 100)
+            }
+        }
+
+        function init_db() {
+            const db = []
+            const lines = DB_STRING.split("\n")
+            for (let line of lines) {
+                if (!line) {
+                    continue
+                }
+                const lower = line.toLowerCase()
+                const record = {
+                    ["text"]: line,
+                    ["chars"]: [...lower],
+                }
+                db.push(record)
+            }
+            return db
+        }
+    </script>
+</html>
