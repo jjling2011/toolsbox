@@ -6,7 +6,7 @@
  * 中文词典
 
 #### 截图
-<img src="./docs/imgs/calc.png" alt="screenshot.png" width="200"/> <img src="./docs/imgs/dict-en.png" alt="screenshot.png" width="200"/> <img src="./docs/imgs/dict-cn.png" alt="screenshot.png" width="200"/>
+<img src="./docs/imgs/calc.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-en.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-cn.png" alt="screenshot.png" width="250"/>
 
 #### 感谢
 中文词典数据来源：  
