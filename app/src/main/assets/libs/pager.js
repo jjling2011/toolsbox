@@ -30,14 +30,14 @@ function CreatePager(divId, pageButtonNum, onClickCallBack) {
         const end = Math.min(start + showN - 1, lastPage)
 
         if (start !== 1) {
-            const firstBtn = createBtn("<", 1, lastPage)
+            const firstBtn = createBtn(1, 1, lastPage)
             c.append(firstBtn)
             c.append($("<span>...</span>"))
         }
 
         for (let index = start; index <= end; index++) {
             const idx = index
-            const btn = createBtn(`${idx}`, idx, lastPage)
+            const btn = createBtn(idx, idx, lastPage)
             if (idx === curPage) {
                 btn.addClass("active")
             }
@@ -45,7 +45,7 @@ function CreatePager(divId, pageButtonNum, onClickCallBack) {
         }
         if (end !== lastPage) {
             c.append($("<span>...</span>"))
-            const lastBtn = createBtn(">", lastPage, lastPage)
+            const lastBtn = createBtn(lastPage, lastPage, lastPage)
             c.append(lastBtn)
         }
 

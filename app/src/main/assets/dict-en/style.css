@@ -1,0 +1,43 @@
+.container {
+    display: flex;
+    margin: 0.25rem 0;
+}
+
+.container button {
+    border: 1px solid lightgray;
+    background-color: white;
+    border-radius: 0.25rem;
+    margin: 0 0.25rem;
+}
+
+#inputBox {
+    flex-grow: 1;
+    padding: 0.25rem;
+    line-height: 1rem;
+}
+
+#outputBox {
+    display: block;
+}
+
+li span i {
+    margin: 0 0.5rem;
+}
+
+li {
+    display: block;
+    padding: 0.5rem 0.5rem;
+    margin: 0.25rem 0;
+    background-color: ghostwhite;
+}
+
+li:nth-child(odd) {
+    background-color: whitesmoke;
+}
+
+li span,
+li pre {
+    display: block;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}

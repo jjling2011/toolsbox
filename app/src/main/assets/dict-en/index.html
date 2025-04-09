@@ -5,53 +5,16 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="creater" content="DeepSeek v3" />
         <title>英语词典</title>
+        <link rel="stylesheet" href="../style/fontawesome.min.css" />
+        <link rel="stylesheet" href="../style/solid.min.css" />
         <link rel="stylesheet" href="../style/base.css" />
         <link rel="stylesheet" href="../style/pager.css" />
         <link rel="stylesheet" href="../style/dialogs.css" />
+        <link rel="stylesheet" href="./style.css" />
         <script src="../libs/jquery-3.7.1.min.js"></script>
+        <script src="../libs/utils.js"></script>
         <script src="../libs/pager.js"></script>
         <script src="../libs/dialogs.js"></script>
-        <style>
-            .container {
-                display: flex;
-                margin: 0.25rem 0;
-            }
-
-            .container button {
-                border: 1px solid lightgray;
-                background-color: white;
-                border-radius: 0.25rem;
-                margin: 0 0.25rem;
-            }
-
-            #inputBox {
-                flex-grow: 1;
-                padding: 0.25rem;
-                line-height: 1rem;
-            }
-
-            #outputBox {
-                display: block;
-            }
-
-            li {
-                display: block;
-                padding: 0.5rem 0.5rem;
-                margin: 0.25rem 0;
-                background-color: ghostwhite;
-            }
-
-            li:nth-child(odd) {
-                background-color: whitesmoke;
-            }
-
-            li span,
-            li pre {
-                display: block;
-                white-space: pre-wrap;
-                word-wrap: break-word;
-            }
-        </style>
     </head>
     <body>
         <div id="searchContainer" class="container">
@@ -80,9 +43,23 @@
             }
         })
 
+        function genWord(w) {
+            const span = $("<span>")
+            span.text(w)
+            if (window.speechSynthesis) {
+                const button = $(`<i class="fa-solid fa-volume-low"></i>`)
+                button.on("click", () => {
+                    const utt = new SpeechSynthesisUtterance(w)
+                    window.speechSynthesis.speak(utt)
+                })
+                span.append(button)
+            }
+            return span
+        }
+
         function toLi(d) {
             const li = $("<li>")
-            li.append($("<span>").text(d.word))
+            li.append(genWord(d.word))
             if (d.phonetic) {
                 li.append($("<pre>").text(`/${d.phonetic}/`))
             }
@@ -119,7 +96,7 @@
                 return
             }
 
-            isChn = !/^[a-z \-0-9]+$/i.test(keyword)
+            isChn = !utils.isAlphabet(keyword)
 
             const headers = {
                 ["Is-Reverse"]: isChn ? `true` : `false`,
@@ -134,44 +111,20 @@
                     .then((response) => response.json())
                     .then((data) => showResult(resolve, keyword, data))
                     .catch((error) =>
-                        showResult(resolve, "", [
-                            {
-                                ["word"]: "error",
-                                ["translation"]: error.message,
-                            },
-                        ]),
+                        showResult(resolve, "", errorResults(error)),
                     )
             })
 
             dialogs.loading("拼命搜索中", done, "../res/loading.svg")
         }
 
-        function marks(kws, str) {
-            const max = Number.MAX_SAFE_INTEGER
-            if (!str || !kws || kws.length < 1) {
-                return max
-            }
-            const lower = str.toLowerCase()
-            const chars = [...lower]
-            const len_s = chars.length
-            const len_kw = kws.length
-
-            let r = 0
-            let idx_r = 0
-            let idx_kw = 0
-            let match = 0
-            while (idx_r < len_s && idx_kw < len_kw) {
-                if (chars[idx_r] === kws[idx_kw]) {
-                    match++
-                    r += idx_r
-                    idx_kw++
-                }
-                idx_r++
-            }
-            if (match >= len_kw) {
-                return r + (len_s - match)
-            }
-            return max
+        function errorResults(error) {
+            return [
+                {
+                    ["word"]: error.name || "unknow error",
+                    ["translation"]: error.message,
+                },
+            ]
         }
 
         function showResult(resolve, keyword, data) {
@@ -181,30 +134,32 @@
                     results = data.sort((a, b) => {
                         a.cmarks =
                             a.cmarks ||
-                            marks(
+                            utils.marks(
                                 kws,
-                                a.translation.replace(/[a-z.0-9 ]/gim, ""),
+                                utils.removeAlphabet(a.translation),
                             )
                         b.cmarks =
                             b.cmarks ||
-                            marks(
+                            utils.marks(
                                 kws,
-                                b.translation.replace(/[a-z.0-9 ]/gim, ""),
+                                utils.removeAlphabet(b.translation),
                             )
                         return a.cmarks - b.cmarks
                     })
                 } else {
                     results = data.sort((a, b) => {
-                        a.emarks = a.emarks || marks(kws, a.word)
-                        b.emarks = b.emarks || marks(kws, b.word)
+                        a.emarks = a.emarks || utils.marks(kws, a.word)
+                        b.emarks = b.emarks || utils.marks(kws, b.word)
                         return a.emarks - b.emarks
                     })
                 }
-                const pns = Math.ceil(results.length / PAGE_SIZE)
-                pager.goto(1, pns)
+            } catch (err) {
+                results = errorResults(err)
             } finally {
                 resolve && resolve()
             }
+            const pns = Math.ceil(results.length / PAGE_SIZE)
+            pager.goto(1, pns)
         }
     </script>
 </html>
