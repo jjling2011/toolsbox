@@ -1,4 +1,5 @@
-杂七杂八的工具箱
+杂七杂八的工具箱  
+![GitHub License](https://img.shields.io/github/license/jjling2011/toolsbox) ![GitHub repo size](https://img.shields.io/github/repo-size/jjling2011/toolsbox) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jjling2011/toolsbox/total)
 
 #### 功能
  * 列表计算器
