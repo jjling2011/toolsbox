@@ -1,0 +1,72 @@
+.box {
+    display: flex;
+    margin: 0.25rem 0;
+}
+
+.sub-total {
+    flex-grow: 1;
+    text-align: end;
+}
+
+.amount {
+    width: 3rem;
+}
+
+.price {
+    width: 4rem;
+}
+
+.remark {
+    font-size: 0.8rem;
+    color: #444;
+    margin: 0.125rem 2rem;
+}
+
+.index {
+    min-width: 1.5rem;
+}
+
+li {
+    display: block;
+    margin: 0.25rem 0;
+    background-color: #eee;
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+}
+
+li div {
+    display: flex;
+}
+
+li div input {
+    text-align: right;
+    padding: 0.125rem 0.25rem;
+}
+
+li div span {
+    margin: 0.125rem 0.25rem;
+}
+
+#itemsList {
+    margin: 0.25rem 0;
+}
+
+#listInput {
+    flex-grow: 1;
+    padding: 0.25rem;
+}
+
+#tools-container span {
+    text-align: right;
+    padding: 0.125rem 0.5rem;
+    border-radius: 0.25rem;
+    flex-grow: 1;
+    background-color: lightgray;
+}
+
+button {
+    margin: 0 0.125rem;
+    background-color: white;
+    border: 1px solid darkgray;
+    border-radius: 0.25rem;
+}

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>列表计算器</title>
+        <link rel="stylesheet" href="../style/base.css" />
+        <link rel="stylesheet" href="../style/dialogs.css" />
+        <link rel="stylesheet" href="./style.css" />
+        <script src="../libs/jquery-3.7.1.min.js"></script>
+        <script src="../libs/dialogs.js"></script>
+    </head>
+    <body>
+        <div class="box">
+            <input
+                id="listInput"
+                placeholder="单价 数量 备注，用空格分隔，按回车添加"
+            />
+        </div>
+        <div id="tools-container" class="box">
+            <span id="totalSpan"></span>
+            <button id="clearAll">清空</button>
+            <button id="fillZero">归零</button>
+            <button id="saveRecord">保存</button>
+            <button id="loadRecord">加载</button>
+            <button id="removeRecord">删除</button>
+        </div>
+        <ul id="itemsList"></ul>
+    </body>
+    <script>
+        const LIST_CALC_KEY = "list-calc-db"
+        const dialogs = CreateDialogs()
+        const db = loadDb()
+        update()
+
+        $("#clearAll").on("click", async () => {
+            const ok = await dialogs.confirm("确定要清除所有数据吗？")
+            if (!ok) {
+                return
+            }
+            db.cur = []
+            saveDb()
+            update()
+        })
+
+        $("#fillZero").on("click", async () => {
+            const ok = await dialogs.confirm("确定要把所有数量归零吗？")
+            if (!ok) {
+                return
+            }
+            for (let i = 0; i < db.cur.length; i++) {
+                db.cur[i].amount = 0
+            }
+            saveDb()
+            update()
+        })
+
+        $("#saveRecord").on("click", async () => {
+            const name = await dialogs.prompt("请输入记录名：", "")
+            if (!name) {
+                return
+            }
+            const content = JSON.stringify(db.cur)
+            db.records[name] = content
+            saveDb()
+        })
+
+        $("#loadRecord").on("click", async () => {
+            const names = Object.keys(db.records)
+            if (!names || names.length < 1) {
+                dialogs.alert("没有记录可选")
+                return
+            }
+            const name = await dialogs.select("请选择记录：", names)
+            if (!name) {
+                return
+            }
+            try {
+                db.cur = JSON.parse(db.records[name])
+                saveDb()
+            } catch {}
+            update()
+        })
+
+        $("#removeRecord").on("click", async () => {
+            const names = Object.keys(db.records)
+            if (!names || names.length < 1) {
+                dialogs.alert("没有记录可选")
+                return
+            }
+            const name = await dialogs.select("请选择要删除的记录：", names)
+            if (!name) {
+                return
+            }
+            delete db.records[name]
+            saveDb()
+            update()
+        })
+
+        $("#listInput").on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault()
+                addListItem()
+            }
+        })
+
+        function addListItem() {
+            const input = $("#listInput")
+            const str = input.val()
+            input.val("")
+            try {
+                const arr = str.split(" ").filter((s) => !!s)
+                const d = {
+                    price: parseFloat(arr[0]) || 1,
+                    amount: parseFloat(arr[1]) || 1,
+                    remark: arr[2] || "",
+                }
+                db.cur.push(d)
+                saveDb()
+            } catch {}
+            update()
+        }
+
+        function log(...args) {
+            console.log(...args)
+        }
+
+        let saveDbHandle = undefined
+        function saveDb() {
+            clearInterval(saveDbHandle)
+            saveDbHandle = setTimeout(() => {
+                try {
+                    const s = JSON.stringify(db)
+                    localStorage.setItem(LIST_CALC_KEY, s)
+                } catch {}
+            }, 500)
+        }
+
+        function loadDb() {
+            const def = {
+                records: {},
+                cur: [],
+            }
+            try {
+                const str = localStorage.getItem(LIST_CALC_KEY)
+                if (!str) {
+                    return def
+                }
+                const d = JSON.parse(str)
+                if (!d) {
+                    return def
+                }
+                for (let key in def) {
+                    if (!d[key]) {
+                        d[key] = def[key]
+                    }
+                }
+                return d
+            } catch {}
+            return def
+        }
+
+        async function removeRow(i) {
+            const ok = await dialogs.confirm(`确定要删除第 [${i + 1}] 行吗？`)
+            if (!ok) {
+                return
+            }
+            db.cur.splice(i, 1)
+            saveDb()
+            update()
+        }
+
+        function changeValue(i, evt, key) {
+            const el = $(evt.target)
+            try {
+                const s = el.val()
+                db.cur[i][key] = parseFloat(s)
+                saveDb()
+            } catch {}
+            update()
+        }
+
+        async function changeRemark(i) {
+            const cur = db.cur[i].remark
+            const remark = await dialogs.prompt("修改备注：", cur)
+            if (remark === null) {
+                return
+            }
+            db.cur[i].remark = remark
+            saveDb()
+            update()
+        }
+
+        function toFixed(n) {
+            return (n || 0).toFixed(2)
+        }
+
+        function update() {
+            const container = $("#itemsList")
+            container.empty()
+            let total = 0
+            for (let idx = 0; idx < db.cur.length; idx++) {
+                const i = idx
+                const d = db.cur[i]
+                const line1 = $("<div>")
+                const tag = $(`<span>${i + 1}.</span>`)
+                tag.addClass("index")
+                line1.append(tag)
+                tag.on("click", () => changeRemark(i))
+
+                const price = $(`<input type="number">`)
+                price.addClass("price")
+                price.val(toFixed(d.price))
+                price.on("change", (evt) => changeValue(i, evt, "price"))
+                price.on("click", (evt) => $(evt.target).select())
+                line1.append(price)
+
+                line1.append($("<span>x</span>"))
+
+                const amo = $(`<input type="number">`)
+                amo.addClass("amount")
+                amo.val(d.amount)
+                amo.on("change", (evt) => changeValue(i, evt, "amount"))
+                amo.on("click", (evt) => $(evt.target).select())
+                line1.append(amo)
+
+                const subTotal = d.amount * d.price
+                total = total + subTotal
+                line1.append($("<span>=</span>"))
+                const sub = $(`<span>${toFixed(subTotal)}</span>`)
+                sub.addClass("sub-total")
+                line1.append(sub)
+
+                const del = $("<button>删除</button>")
+                del.on("click", () => removeRow(i))
+                line1.append(del)
+
+                const li = $("<li>")
+                li.append(line1)
+
+                if (d.remark) {
+                    const line2 = $("<div>")
+                    const remark = $("<span>")
+                    remark.addClass("remark")
+                    remark.text(`备注：${d.remark}`)
+                    remark.on("click", () => changeRemark(i))
+                    line2.append(remark)
+                    li.append(line2)
+                }
+
+                container.append(li)
+            }
+            $("#totalSpan").text(toFixed(total))
+        }
+    </script>
+</html>
