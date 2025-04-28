@@ -2,7 +2,6 @@ package com.example.toolsbox
 
 import android.annotation.SuppressLint
 import android.os.Bundle
-import android.util.Log
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -18,7 +17,6 @@ import java.io.ByteArrayInputStream
 import java.net.URLDecoder
 
 private const val WEBSITE = "http://www.toolbox.home/"
-private const val TAG = "tools"
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
@@ -53,8 +51,7 @@ class MainActivity : AppCompatActivity() {
         val keyword = URLDecoder.decode(encoded, "UTF-8")
         val isReverse = headers["Is-Reverse"] == "true"
 
-        val jsonString =
-            dbHelper.searchDictEng(keyword, isReverse)
+        val jsonString = dbHelper.searchDictEng(keyword, isReverse)
         val inputStream = ByteArrayInputStream(jsonString.toByteArray(Charsets.UTF_8))
         return WebResourceResponse(
             mime, "UTF-8", inputStream
@@ -69,11 +66,6 @@ class MainActivity : AppCompatActivity() {
         val includeWordDb = headers["Include-Word"] == "true"
         val includeIdiomDb = headers["Include-Idiom"] == "true"
         val includeXhyDb = headers["Include-Xhy"] == "true"
-
-        Log.d(
-            TAG,
-            "keyword: $keyword, Word: $includeWordDb, Idiom: $includeIdiomDb, Xhy: $includeXhyDb"
-        )
 
         val jsonString =
             dbHelper.searchDictChn(keyword, includeWordDb, includeIdiomDb, includeXhyDb)
@@ -100,15 +92,16 @@ class MainActivity : AppCompatActivity() {
                 val url = request.url
                 val path: String =
                     if (url.path != null && url.path != "/") url.path!!.substring(1) else "index.html"
-                Log.d(TAG, "url: $url path: $path")
                 return try {
                     when (path) {
                         "dict-cn/serv.php" -> {
                             handleDictChnGetRequest(request)
                         }
+
                         "dict-en/serv.php" -> {
                             handleDictEngGetRequest(request)
                         }
+
                         else -> {
                             // 尝试从assets加载文件
                             val inputStream = assets.open(path)
