@@ -2,6 +2,7 @@ package com.example.toolsbox
 
 import android.annotation.SuppressLint
 import android.os.Bundle
+import android.view.KeyEvent
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -9,12 +10,15 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Button
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import java.io.ByteArrayInputStream
 import java.net.URLDecoder
+import kotlin.system.exitProcess
+
 
 private const val WEBSITE = "http://www.toolbox.home/"
 
@@ -41,6 +45,29 @@ class MainActivity : AppCompatActivity() {
         setupWebView()
         findViewById<Button>(R.id.btnGreet).setOnClickListener {
             webView.loadUrl(WEBSITE)
+        }
+    }
+
+    private var exitTime: Long = 0
+    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
+        if (keyCode == KeyEvent.KEYCODE_BACK) {
+            exit()
+            return false
+        }
+        return super.onKeyDown(keyCode, event)
+    }
+
+    private fun exit() {
+        if ((System.currentTimeMillis() - exitTime) > 1000) {
+            webView.loadUrl(WEBSITE)
+            Toast.makeText(
+                applicationContext, R.string.press_again_to_exit,
+                Toast.LENGTH_SHORT
+            ).show()
+            exitTime = System.currentTimeMillis()
+        } else {
+            finish()
+            exitProcess(0)
         }
     }
 
