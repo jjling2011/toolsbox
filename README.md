@@ -1,4 +1,3 @@
-杂七杂八的工具箱  
 ![GitHub License](https://img.shields.io/github/license/jjling2011/toolsbox) ![GitHub repo size](https://img.shields.io/github/repo-size/jjling2011/toolsbox) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jjling2011/toolsbox/total)
 
 #### 功能
@@ -8,6 +7,9 @@
 
 #### 截图
 <img src="./docs/imgs/calc.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-en.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-cn.png" alt="screenshot.png" width="250"/>
+
+#### 下载地址
+[latest release](https://github.com/jjling2011/toolsbox/releases/latest)
 
 #### 更新记录
 [update-log.md](./docs/update-log.md)  
