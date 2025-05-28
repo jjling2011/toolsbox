@@ -9,6 +9,9 @@
 #### 截图
 <img src="./docs/imgs/calc.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-en.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-cn.png" alt="screenshot.png" width="250"/>
 
+#### 更新记录
+[update-log.md](./docs/update-log.md)  
+
 #### 感谢
 中文词典数据来源：  
 https://github.com/pwxcoo/chinese-xinhua  

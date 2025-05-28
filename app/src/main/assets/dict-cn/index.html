@@ -17,6 +17,7 @@
             id="inputBox"
             oninput="update()"
             placeholder="在这里输入内容..."
+            autofocus
         />
         <div id="searchOptions" class="container">
             <input type="checkbox" id="checkWord" name="checkWord" />
@@ -40,6 +41,8 @@
         const outputBox = document.getElementById("outputBox")
         const pager = CreatePager("pager", 5, (n) => showPage(n))
         let results = []
+
+        inputBox.click()
 
         // for debugging
         function lookup1(keyword) {

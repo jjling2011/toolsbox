@@ -18,7 +18,12 @@
     </head>
     <body>
         <div id="searchContainer" class="container">
-            <input type="text" id="inputBox" placeholder="在这里输入内容..." />
+            <input
+                type="text"
+                id="inputBox"
+                placeholder="在这里输入内容..."
+                autofocus
+            />
             <button id="lookupButton">搜索</button>
         </div>
         <ul id="outputBox" class="container"></ul>
@@ -42,6 +47,8 @@
                 lookup()
             }
         })
+
+        $("#inputBox").click()
 
         function genWord(w) {
             const span = $("<span>")
