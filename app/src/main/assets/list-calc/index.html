@@ -15,6 +15,7 @@
             <input
                 id="listInput"
                 placeholder="单价 数量 备注，用空格分隔，按回车添加"
+                autofocus
             />
         </div>
         <div id="tools-container" class="box">
@@ -32,6 +33,8 @@
         const dialogs = CreateDialogs()
         const db = loadDb()
         update()
+
+        Android.showIme()
 
         $("#clearAll").on("click", async () => {
             const ok = await dialogs.confirm("确定要清除所有数据吗？")

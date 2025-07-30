@@ -61,8 +61,7 @@ class MainActivity : AppCompatActivity() {
         if ((System.currentTimeMillis() - exitTime) > 1000) {
             webView.loadUrl(WEBSITE)
             Toast.makeText(
-                applicationContext, R.string.press_again_to_exit,
-                Toast.LENGTH_SHORT
+                applicationContext, R.string.press_again_to_exit, Toast.LENGTH_SHORT
             ).show()
             exitTime = System.currentTimeMillis()
         } else {
@@ -105,8 +104,6 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun setupWebView() {
         val that = this
-
-        webView.setFocusableInTouchMode(true)
 
         webView.webChromeClient = object : WebChromeClient() {
             override fun onReceivedTitle(view: WebView?, title: String?) {
@@ -154,6 +151,10 @@ class MainActivity : AppCompatActivity() {
         val ws = webView.settings
         ws.javaScriptEnabled = true
         ws.domStorageEnabled = true
+
+        // 注入 window.Android
+        webView.setFocusableInTouchMode(true)
+        webView.addJavascriptInterface(JavaScriptInterface(this, webView), "Android")
 
         // 加载虚拟网址
         webView.loadUrl(WEBSITE)
