@@ -3,6 +3,18 @@
     margin: 0.25rem 0;
 }
 
+.remark-leading {
+    width: 1.125rem;
+}
+
+.grow {
+    flex-grow: 1;
+}
+
+.right {
+    justify-content: right;
+}
+
 .sub-total {
     flex-grow: 1;
     text-align: end;
@@ -19,7 +31,7 @@
 .remark {
     font-size: 0.8rem;
     color: #444;
-    margin: 0.125rem 2rem;
+    margin: 0.125rem 0.5rem;
 }
 
 .index {
@@ -56,11 +68,9 @@ li div span {
     padding: 0.25rem;
 }
 
-#tools-container span {
-    text-align: right;
-    padding: 0.125rem 0.5rem;
+#totalSpan {
+    padding: 0.125rem 1.5rem;
     border-radius: 0.25rem;
-    flex-grow: 1;
     background-color: lightgray;
 }
 

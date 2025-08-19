@@ -13,19 +13,24 @@
     <body>
         <div class="box">
             <input
-                type="text" inputmode="decimal"
+                type="text"
+                inputmode="decimal"
                 id="listInput"
                 placeholder="单价 数量 备注，用空格分隔，按回车添加"
                 autofocus
             />
         </div>
         <div id="tools-container" class="box">
-            <span id="totalSpan"></span>
-            <button id="clearAll">清空</button>
-            <button id="fillZero">归零</button>
             <button id="saveRecord">保存</button>
             <button id="loadRecord">加载</button>
+            <button id="replaceRecord">替换</button>
             <button id="removeRecord">删除</button>
+            <span class="grow"></span>
+            <button id="clearAll">清空</button>
+            <button id="fillZero">归零</button>
+        </div>
+        <div class="box right">
+            <span>合计：</span><span id="totalSpan"></span>
         </div>
         <ul id="itemsList"></ul>
     </body>
@@ -35,7 +40,7 @@
         const db = loadDb()
         update()
 
-        Android.showIme()
+        // Android.showIme()
 
         $("#clearAll").on("click", async () => {
             const ok = await dialogs.confirm("确定要清除所有数据吗？")
@@ -69,13 +74,19 @@
             saveDb()
         })
 
-        $("#loadRecord").on("click", async () => {
+        async function selectRecordName(tip) {
             const names = Object.keys(db.records)
             if (!names || names.length < 1) {
                 dialogs.alert("没有记录可选")
-                return
+                return null
             }
-            const name = await dialogs.select("请选择记录：", names)
+            names.sort()
+            const name = await dialogs.select(`请选择要${tip}的记录：`, names)
+            return name
+        }
+
+        $("#loadRecord").on("click", async () => {
+            const name = await selectRecordName(`加载`)
             if (!name) {
                 return
             }
@@ -84,6 +95,16 @@
                 saveDb()
             } catch {}
             update()
+        })
+
+        $("#replaceRecord").on("click", async () => {
+            const name = await selectRecordName(`替换`)
+            if (!name) {
+                return
+            }
+            const content = JSON.stringify(db.cur)
+            db.records[name] = content
+            saveDb()
         })
 
         $("#removeRecord").on("click", async () => {
@@ -184,6 +205,17 @@
             update()
         }
 
+        async function changeRatio(i) {
+            const cur = db.cur[i].ratio || 0
+            const d = await dialogs.prompt("修改倍数（填零删除）：", cur)
+            if (d === null) {
+                return
+            }
+            db.cur[i].ratio = d
+            saveDb()
+            update()
+        }
+
         async function changeRemark(i) {
             const cur = db.cur[i].remark
             const remark = await dialogs.prompt("修改备注：", cur)
@@ -228,11 +260,13 @@
                 amo.on("click", (evt) => $(evt.target).select())
                 line1.append(amo)
 
-                const subTotal = d.amount * d.price
+                const ratio = d.ratio > 0 ? d.ratio : 1
+                const subTotal = d.amount * d.price * ratio
                 total = total + subTotal
                 line1.append($("<span>=</span>"))
                 const sub = $(`<span>${toFixed(subTotal)}</span>`)
                 sub.addClass("sub-total")
+                sub.on("click", () => changeRatio(i))
                 line1.append(sub)
 
                 const del = $("<button>删除</button>")
@@ -242,13 +276,26 @@
                 const li = $("<li>")
                 li.append(line1)
 
-                if (d.remark) {
+                if (d.remark || d.ratio) {
                     const line2 = $("<div>")
-                    const remark = $("<span>")
-                    remark.addClass("remark")
-                    remark.text(`备注：${d.remark}`)
-                    remark.on("click", () => changeRemark(i))
-                    line2.append(remark)
+                    const leading = $(`<span class="remark-leading">`)
+                    line2.append(leading)
+
+                    if (d.remark) {
+                        const remark = $("<span>")
+                        remark.addClass("remark")
+                        remark.text(`备注：${d.remark}`)
+                        remark.on("click", () => changeRemark(i))
+                        line2.append(remark)
+                    }
+
+                    if (d.ratio > 0) {
+                        const ratioSpan = $("<span>")
+                        ratioSpan.addClass("remark")
+                        ratioSpan.text(`倍数：${d.ratio}`)
+                        ratioSpan.on("click", () => changeRatio(i))
+                        line2.append(ratioSpan)
+                    }
                     li.append(line2)
                 }
 
