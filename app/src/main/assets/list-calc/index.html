@@ -30,24 +30,29 @@
             <button id="fillZero">归零</button>
         </div>
         <div class="box right">
-            <span>合计：</span><span id="totalSpan"></span>
+            <span id="totalDiscountSpan"></span>
+            <span id="totalSpan"></span>
         </div>
         <ul id="itemsList"></ul>
     </body>
     <script>
-        const LIST_CALC_KEY = "list-calc-db"
+        const LIST_CALC_KEY = "list-calc-data"
         const dialogs = CreateDialogs()
         const db = loadDb()
         update()
 
-        // Android.showIme()
+        window.Android && window.Android.showIme()
+
+        $("#totalDiscountSpan").on("click", () => changeTotalDiscount())
+        $("#totalSpan").on("click", () => changeTotalDiscount())
 
         $("#clearAll").on("click", async () => {
             const ok = await dialogs.confirm("确定要清除所有数据吗？")
             if (!ok) {
                 return
             }
-            db.cur = []
+            db.cur.rows = []
+            db.cur.totalDiscount = 0
             saveDb()
             update()
         })
@@ -57,8 +62,9 @@
             if (!ok) {
                 return
             }
-            for (let i = 0; i < db.cur.length; i++) {
-                db.cur[i].amount = 0
+            const rows = db.cur.rows
+            for (let i = 0; i < rows.length; i++) {
+                rows[i].amount = 0
             }
             saveDb()
             update()
@@ -93,7 +99,9 @@
             try {
                 db.cur = JSON.parse(db.records[name])
                 saveDb()
-            } catch {}
+            } catch (err) {
+                dialogs.alert(`${err.message}`)
+            }
             update()
         })
 
@@ -108,12 +116,7 @@
         })
 
         $("#removeRecord").on("click", async () => {
-            const names = Object.keys(db.records)
-            if (!names || names.length < 1) {
-                dialogs.alert("没有记录可选")
-                return
-            }
-            const name = await dialogs.select("请选择要删除的记录：", names)
+            const name = await selectRecordName(`删除`)
             if (!name) {
                 return
             }
@@ -140,7 +143,7 @@
                     amount: parseFloat(arr[1]) || 1,
                     remark: arr[2] || "",
                 }
-                db.cur.push(d)
+                db.cur.rows.push(d)
                 saveDb()
             } catch {}
             update()
@@ -161,16 +164,46 @@
             }, 500)
         }
 
+        function tryLoadOldDb(def) {
+            const key = "list-calc-db"
+            console.log(`try load leagcy db: ${key}`)
+            const str = localStorage.getItem(key)
+            if (!str) {
+                return null
+            }
+            try {
+                const db = JSON.parse(JSON.stringify(def))
+                const old = JSON.parse(str)
+                db.cur.rows = old.cur
+                for (let name in old.records) {
+                    const rows = JSON.parse(old.records[name])
+                    const record = {
+                        ["rows"]: rows,
+                        ["totalDiscount"]: 0,
+                    }
+                    db.records[name] = JSON.stringify(record)
+                }
+                return db
+            } catch (err) {
+                dialogs.alert(`转换旧数据失败：\n${err.message}`)
+            }
+            return null
+        }
+
         function loadDb() {
             const def = {
                 records: {},
-                cur: [],
+                cur: {
+                    rows: [],
+                    totalDiscount: 0,
+                },
+            }
+            const str = localStorage.getItem(LIST_CALC_KEY)
+            if (!str) {
+                const old = tryLoadOldDb(def)
+                return old || def
             }
             try {
-                const str = localStorage.getItem(LIST_CALC_KEY)
-                if (!str) {
-                    return def
-                }
                 const d = JSON.parse(str)
                 if (!d) {
                     return def
@@ -190,7 +223,7 @@
             if (!ok) {
                 return
             }
-            db.cur.splice(i, 1)
+            db.cur.rows.splice(i, 1)
             saveDb()
             update()
         }
@@ -199,109 +232,149 @@
             const el = $(evt.target)
             try {
                 const s = el.val()
-                db.cur[i][key] = parseFloat(s)
+                db.cur.rows[i][key] = parseFloat(s)
                 saveDb()
             } catch {}
             update()
         }
 
-        async function changeRatio(i) {
-            const cur = db.cur[i].ratio || 0
-            const d = await dialogs.prompt("修改倍数（填零删除）：", cur)
+        async function changeTotalDiscount() {
+            const cur = db.cur.totalDiscount || 0
+            const d = await dialogs.prompt("修改总折扣（填零删除）：", cur)
             if (d === null) {
                 return
             }
-            db.cur[i].ratio = d
+            db.cur.totalDiscount = d
             saveDb()
             update()
         }
 
-        async function changeRemark(i) {
-            const cur = db.cur[i].remark
+        async function changeDiscount(index) {
+            const row = db.cur.rows[index]
+            const cur = row.discount || 0
+            const d = await dialogs.prompt("修改折扣（填零删除）：", cur)
+            if (d === null) {
+                return
+            }
+            row.discount = d
+            saveDb()
+            update()
+        }
+
+        async function changeRemark(index) {
+            const row = db.cur.rows[index]
+            const cur = row.remark
             const remark = await dialogs.prompt("修改备注：", cur)
             if (remark === null) {
                 return
             }
-            db.cur[i].remark = remark
+            row.remark = remark
             saveDb()
             update()
         }
 
         function toFixed(n) {
-            return (n || 0).toFixed(2)
+            return (n * 1 || 0).toFixed(2)
         }
 
         function update() {
             const container = $("#itemsList")
             container.empty()
             let total = 0
-            for (let idx = 0; idx < db.cur.length; idx++) {
+            const rows = db.cur.rows
+            for (let idx = 0; idx < rows.length; idx++) {
                 const i = idx
-                const d = db.cur[i]
-                const line1 = $("<div>")
-                const tag = $(`<span>${i + 1}.</span>`)
-                tag.addClass("index")
-                line1.append(tag)
-                tag.on("click", () => changeRemark(i))
-
-                const price = $(`<input type="number">`)
-                price.addClass("price")
-                price.val(toFixed(d.price))
-                price.on("change", (evt) => changeValue(i, evt, "price"))
-                price.on("click", (evt) => $(evt.target).select())
-                line1.append(price)
-
-                line1.append($("<span>x</span>"))
-
-                const amo = $(`<input type="number">`)
-                amo.addClass("amount")
-                amo.val(d.amount)
-                amo.on("change", (evt) => changeValue(i, evt, "amount"))
-                amo.on("click", (evt) => $(evt.target).select())
-                line1.append(amo)
-
-                const ratio = d.ratio > 0 ? d.ratio : 1
-                const subTotal = d.amount * d.price * ratio
+                const row = rows[i]
+                const discount = row.discount > 0 ? row.discount : 1
+                const subTotal = row.amount * row.price * discount
                 total = total + subTotal
-                line1.append($("<span>=</span>"))
-                const sub = $(`<span>${toFixed(subTotal)}</span>`)
-                sub.addClass("sub-total")
-                sub.on("click", () => changeRatio(i))
-                line1.append(sub)
-
-                const del = $("<button>删除</button>")
-                del.on("click", () => removeRow(i))
-                line1.append(del)
 
                 const li = $("<li>")
+
+                const line1 = genLine1(i, row, subTotal)
                 li.append(line1)
 
-                if (d.remark || d.ratio) {
-                    const line2 = $("<div>")
-                    const leading = $(`<span class="remark-leading">`)
-                    line2.append(leading)
-
-                    if (d.remark) {
-                        const remark = $("<span>")
-                        remark.addClass("remark")
-                        remark.text(`备注：${d.remark}`)
-                        remark.on("click", () => changeRemark(i))
-                        line2.append(remark)
-                    }
-
-                    if (d.ratio > 0) {
-                        const ratioSpan = $("<span>")
-                        ratioSpan.addClass("remark")
-                        ratioSpan.text(`倍数：${d.ratio}`)
-                        ratioSpan.on("click", () => changeRatio(i))
-                        line2.append(ratioSpan)
-                    }
+                if (row.remark || row.discount) {
+                    const line2 = genLine2(row, i)
                     li.append(line2)
                 }
 
                 container.append(li)
             }
-            $("#totalSpan").text(toFixed(total))
+            updateTotals(total, db.cur.totalDiscount)
+        }
+
+        function updateTotals(total, discount) {
+            const spanDiscount = $("#totalDiscountSpan")
+            const spanTotal = $("#totalSpan")
+            if (discount > 0) {
+                spanDiscount.css("color", "orangered")
+                spanDiscount.text(`含折扣（${toFixed(discount)}）：`)
+                spanTotal.text(toFixed(total * discount))
+            } else {
+                spanDiscount.text(`合计：`)
+                spanDiscount.css("color", "darkgray")
+                spanTotal.text(toFixed(total))
+            }
+        }
+
+        function genLine1(idx, row, subTotal) {
+            const line1 = $("<div>")
+
+            const tag = $(`<span>${idx + 1}.</span>`)
+            tag.addClass("index")
+            tag.on("click", () => changeRemark(idx))
+            line1.append(tag)
+
+            const price = $(`<input type="number">`)
+            price.addClass("price")
+            price.val(toFixed(row.price))
+            price.on("change", (evt) => changeValue(idx, evt, "price"))
+            price.on("click", (evt) => $(evt.target).select())
+            line1.append(price)
+
+            line1.append($("<span>x</span>"))
+
+            const amo = $(`<input type="number">`)
+            amo.addClass("amount")
+            amo.val(row.amount)
+            amo.on("change", (evt) => changeValue(idx, evt, "amount"))
+            amo.on("click", (evt) => $(evt.target).select())
+            line1.append(amo)
+
+            line1.append($("<span>=</span>"))
+            const sub = $(`<span>${toFixed(subTotal)}</span>`)
+            sub.addClass("sub-total")
+            sub.on("click", () => changeDiscount(idx))
+            line1.append(sub)
+
+            const del = $("<button>删除</button>")
+            del.on("click", () => removeRow(idx))
+            line1.append(del)
+            return line1
+        }
+
+        function genLine2(row, idx) {
+            const line2 = $("<div>")
+            const leading = $(`<span class="remark-leading">`)
+            line2.append(leading)
+
+            if (row.remark) {
+                const spanRemark = $("<span>")
+                spanRemark.addClass("remark")
+                spanRemark.text(`备注：${row.remark}`)
+                spanRemark.on("click", () => changeRemark(idx))
+                line2.append(spanRemark)
+            }
+
+            if (row.discount > 0) {
+                const spanDiscount = $("<span>")
+                spanDiscount.addClass("remark")
+                spanDiscount.text(`折扣：${row.discount}`)
+                spanDiscount.on("click", () => changeDiscount(idx))
+                line2.append(spanDiscount)
+            }
+            return line2
         }
     </script>
 </html>
