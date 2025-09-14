@@ -6,7 +6,7 @@
  * 中文词典
 
 #### 截图
-<img src="./docs/imgs/calc.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-en.png" alt="screenshot.png" width="250"/> <img src="./docs/imgs/dict-cn.png" alt="screenshot.png" width="250"/>
+<img src="./docs/imgs/calc.jpg" alt="screenshot.jpg" width="250"/> <img src="./docs/imgs/dict-en.jpg" alt="screenshot.jpg" width="250"/> <img src="./docs/imgs/dict-cn.jpg" alt="screenshot.jpg" width="250"/>
 
 #### 下载地址
 [latest release](https://github.com/jjling2011/toolsbox/releases/latest)
