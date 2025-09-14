@@ -20,7 +20,7 @@ import java.net.URLDecoder
 import kotlin.system.exitProcess
 
 
-private const val WEBSITE = "http://www.toolbox.home/"
+private const val WEBSITE = "http://www.toolbox.home/index.html"
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
@@ -51,7 +51,11 @@ class MainActivity : AppCompatActivity() {
     private var exitTime: Long = 0
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         if (keyCode == KeyEvent.KEYCODE_BACK) {
-            exit()
+            if(webView.url == WEBSITE) {
+                exit()
+            }else{
+                webView.loadUrl(WEBSITE)
+            }
             return false
         }
         return super.onKeyDown(keyCode, event)
@@ -59,7 +63,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun exit() {
         if ((System.currentTimeMillis() - exitTime) > 1000) {
-            webView.loadUrl(WEBSITE)
             Toast.makeText(
                 applicationContext, R.string.press_again_to_exit, Toast.LENGTH_SHORT
             ).show()
