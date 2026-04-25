@@ -1,9 +1,6 @@
-![GitHub License](https://img.shields.io/github/license/jjling2011/toolsbox) ![GitHub repo size](https://img.shields.io/github/repo-size/jjling2011/toolsbox) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jjling2011/toolsbox/total)
+toolsbox 是一个免费、无广的安卓词典软件。自带英文、中文字、成语、歇后语词库，不用联网。还有一个 windows 同款软件 [dict](http://github.com/jjling2011/dict)。
 
-#### 功能
- * 列表计算器
- * 英语词典
- * 中文词典
+![GitHub License](https://img.shields.io/github/license/jjling2011/toolsbox) ![GitHub repo size](https://img.shields.io/github/repo-size/jjling2011/toolsbox) ![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/jjling2011/toolsbox/total)
 
 #### 截图
 <img src="./docs/imgs/calc.jpg" alt="screenshot.jpg" width="250"/> <img src="./docs/imgs/dict-en.jpg" alt="screenshot.jpg" width="250"/> <img src="./docs/imgs/dict-cn.jpg" alt="screenshot.jpg" width="250"/>
@@ -29,3 +26,6 @@ https://chat.deepseek.com
 图标来源：  
 https://icons8.com/icons/set/toolbox  
 https://github.com/n3r4zzurr0/svg-spinners  
+
+#### 吐糟
+Android Studio 真不是人用的，写完就不想再打开，所以关 issue 了。
